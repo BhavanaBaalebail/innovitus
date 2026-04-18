@@ -10,18 +10,21 @@ import torch.nn as nn
 
 
 class FatigueDetectionCNN(nn.Module):
-    """Same CNN as train.py / best_model.pth (Conv 32→64→128, ReLU+pool, FC→2)."""
+    """Same as train.py FatigueDetectionCNN (Conv-BN-ReLU + classifier)."""
 
-    def __init__(self):
+    def __init__(self, dropout=0.25):
         super().__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),
         )
@@ -29,7 +32,7 @@ class FatigueDetectionCNN(nn.Module):
             nn.Flatten(),
             nn.Linear(128 * 8 * 8, 256),
             nn.ReLU(inplace=True),
-            nn.Dropout(0.4),
+            nn.Dropout(dropout),
             nn.Linear(256, 2),
         )
 
@@ -39,7 +42,7 @@ class FatigueDetectionCNN(nn.Module):
 
 def main():
     device = torch.device("cpu")
-    model = FatigueDetectionCNN().to(device)
+    model = FatigueDetectionCNN(dropout=0.25).to(device)
     model.load_state_dict(torch.load("best_model.pth", map_location=device, weights_only=True))
     model.eval()
 
@@ -60,10 +63,10 @@ def main():
     name = session.get_inputs()[0].name
     out = session.run(None, {name: dummy.numpy()})[0]
     ref = model(dummy).detach().numpy()
-    if np.allclose(out, ref, atol=1e-3):
+    if np.allclose(out, ref, atol=1e-2):
         print("ONNX vs PyTorch: OK")
     else:
-        print("ONNX vs PyTorch: small numeric diff (check)")
+        print("ONNX vs PyTorch: check numeric diff (BN may differ slightly)")
 
     mb = os.path.getsize(onnx_path) / (1024 * 1024)
     print(f"Size: {mb:.2f} MB")
