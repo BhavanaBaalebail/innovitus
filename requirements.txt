@@ -1,7 +1,9 @@
+
+streamlit
+python-dotenv
+groq
 sentence-transformers==2.7.0
 anthropic
 google-generativeai
 numpy
 scikit-learn
-streamlit
-python-dotenv
