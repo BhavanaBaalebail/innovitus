@@ -3,3 +3,5 @@ anthropic
 google-generativeai
 numpy
 scikit-learn
+streamlit
+python-dotenv
